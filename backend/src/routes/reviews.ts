@@ -13,7 +13,8 @@ const DirectReviewBody = z.object({
 })
 
 function verifyGitHubSignature(payload: string, signature: string | undefined): boolean {
-  if (!config.githubWebhookSecret || !signature) return !config.githubWebhookSecret
+  if (!config.githubWebhookSecret) return false
+  if (!signature) return false
   const expected = 'sha256=' + crypto.createHmac('sha256', config.githubWebhookSecret).update(payload).digest('hex')
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
 }

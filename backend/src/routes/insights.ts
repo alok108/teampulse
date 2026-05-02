@@ -23,6 +23,9 @@ export async function insightRoutes(app: FastifyInstance) {
       }
     }
 
+    const fmtTask = (t: { title: string; assigneeId: string | null; dueDate: string | null }) =>
+      `  - "${t.title}" (assigned to: ${t.assigneeId ?? 'unassigned'}, due: ${t.dueDate ?? 'no due date'})`
+
     const snapshot = `
 Team Task Board Snapshot:
 - TODO: ${tasksByStatus.TODO.length} tasks
@@ -32,10 +35,10 @@ Team Task Board Snapshot:
 - Total: ${totalTasks} tasks
 
 Blocked tasks:
-${tasksByStatus.BLOCKED.map(t => `  - "${t.title}" (assigned to: ${t.assigneeId ?? 'unassigned'}, due: ${t.dueDate ?? 'no due date'})`).join('\n') || '  None'}
+${tasksByStatus.BLOCKED.map(fmtTask).join('\n') || '  None'}
 
 In-progress tasks:
-${tasksByStatus.IN_PROGRESS.map(t => `  - "${t.title}" (assigned to: ${t.assigneeId ?? 'unassigned'}, due: ${t.dueDate ?? 'no due date'})`).join('\n') || '  None'}
+${tasksByStatus.IN_PROGRESS.map(fmtTask).join('\n') || '  None'}
 
 Assignee workload (in-progress tasks):
 ${Object.entries(assigneeCounts).map(([id, count]) => `  - ${id}: ${count} tasks`).join('\n') || '  No assignments'}

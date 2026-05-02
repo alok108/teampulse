@@ -102,7 +102,7 @@ export async function createMeeting(meeting: Omit<Meeting, 'id' | 'parsedAt'>): 
 export async function createCodeReview(review: Omit<CodeReview, 'id' | 'createdAt' | 'completedAt'>): Promise<CodeReview> {
   const ref = db.collection('codeReviews').doc()
   const now = FieldValue.serverTimestamp()
-  const data = { ...review, createdAt: now, completedAt: now }
+  const data = { ...review, createdAt: now, completedAt: null }
   await ref.set(data)
   return { ...review, id: ref.id, createdAt: null, completedAt: null }
 }

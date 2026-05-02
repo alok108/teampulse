@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { parseTask } from '../agents/taskParser.js'
-import { createTask, listTasks, getTask, updateTask } from '../services/firestore.js'
+import { createTask, listTasks, getTask, updateTask, type TaskStatus } from '../services/firestore.js'
 
 const CreateTaskBody = z.object({
   description: z.string().min(5),
@@ -47,7 +47,7 @@ export async function taskRoutes(app: FastifyInstance) {
   app.get('/tasks', async (req, reply) => {
     const { teamId, status } = req.query as { teamId?: string; status?: string }
     if (!teamId) return reply.status(400).send({ error: 'teamId is required' })
-    const tasks = await listTasks(teamId, status as never)
+    const tasks = await listTasks(teamId, status as TaskStatus | undefined)
     return { data: tasks }
   })
 
@@ -65,8 +65,9 @@ export async function taskRoutes(app: FastifyInstance) {
     const body = UpdateTaskBody.safeParse(req.body)
     if (!body.success) return reply.status(400).send({ error: body.error.flatten() })
 
+    const existing = await getTask(id)
+    if (!existing) return reply.status(404).send({ error: 'Task not found' })
     await updateTask(id, body.data)
-    const updated = await getTask(id)
-    return { data: updated }
+    return { data: { ...existing, ...body.data } }
   })
 }
