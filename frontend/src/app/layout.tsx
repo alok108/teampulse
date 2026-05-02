@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-white font-bold text-sm">TP</span>
             </div>
             <span className="font-semibold text-slate-900 text-lg">TeamPulse</span>
-            <span className="text-xs text-slate-400 ml-1">by PromptWars Chennai</span>
+            <span className="text-xs text-slate-400 ml-1">built at PromptWars Chennai by Alok Kumar</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-slate-600">
             <a href="/dashboard" className="hover:text-blue-600 transition-colors">Dashboard</a>

@@ -75,8 +75,14 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
 export async function listTasks(teamId: string, status?: TaskStatus): Promise<Task[]> {
   let query = db.collection('tasks').where('teamId', '==', teamId) as FirebaseFirestore.Query
   if (status) query = query.where('status', '==', status)
-  const snap = await query.orderBy('createdAt', 'desc').limit(100).get()
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Task))
+  const snap = await query.limit(200).get()
+  const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() } as Task))
+  tasks.sort((a, b) => {
+    const aMs = a.createdAt?.toMillis?.() ?? 0
+    const bMs = b.createdAt?.toMillis?.() ?? 0
+    return bMs - aMs
+  })
+  return tasks.slice(0, 100)
 }
 
 export async function getTask(taskId: string): Promise<Task | null> {
@@ -110,10 +116,11 @@ export async function createCodeReview(review: Omit<CodeReview, 'id' | 'createdA
 export async function listCodeReviews(teamId: string): Promise<CodeReview[]> {
   const snap = await db.collection('codeReviews')
     .where('teamId', '==', teamId)
-    .orderBy('createdAt', 'desc')
-    .limit(20)
+    .limit(50)
     .get()
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CodeReview))
+  const reviews = snap.docs.map(d => ({ id: d.id, ...d.data() } as CodeReview))
+  reviews.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+  return reviews.slice(0, 20)
 }
 
 export async function getTasksByStatus(teamId: string): Promise<Record<TaskStatus, Task[]>> {

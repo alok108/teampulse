@@ -4,7 +4,7 @@
  */
 import { Firestore, FieldValue } from '@google-cloud/firestore'
 
-const db = new Firestore({ projectId: 'promptwars-chennai-495105' })
+const db = new Firestore({ projectId: 'promptwars-chennai-495105', databaseId: 'teampulse' })
 
 const TEAM_ID = 'demo-team'
 
