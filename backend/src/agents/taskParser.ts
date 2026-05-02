@@ -1,6 +1,5 @@
-import { callAgent, SchemaType } from '../services/gemini.js'
+import { callAgent, Type } from '../services/gemini.js'
 import { TASK_PARSER_PROMPT } from './prompts.js'
-import type { Schema } from '@google-cloud/vertexai'
 import type { TaskPriority } from '../services/firestore.js'
 
 export interface ParsedTask {
@@ -12,21 +11,21 @@ export interface ParsedTask {
   subtasks: { title: string; done: boolean }[]
 }
 
-const schema: Schema = {
-  type: SchemaType.OBJECT,
+const schema = {
+  type: Type.OBJECT,
   properties: {
-    title: { type: SchemaType.STRING },
-    description: { type: SchemaType.STRING },
-    priority: { type: SchemaType.STRING, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
-    estimatedHours: { type: SchemaType.NUMBER },
-    tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    title: { type: Type.STRING },
+    description: { type: Type.STRING },
+    priority: { type: Type.STRING, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
+    estimatedHours: { type: Type.NUMBER },
+    tags: { type: Type.ARRAY, items: { type: Type.STRING } },
     subtasks: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
-          title: { type: SchemaType.STRING },
-          done: { type: SchemaType.BOOLEAN },
+          title: { type: Type.STRING },
+          done: { type: Type.BOOLEAN },
         },
         required: ['title', 'done'],
       },

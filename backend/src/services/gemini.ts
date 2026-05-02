@@ -1,37 +1,31 @@
-import { VertexAI, SchemaType } from '@google-cloud/vertexai'
+import { GoogleGenAI, Type } from '@google/genai'
 import { config } from '../config.js'
-import type { Schema } from '@google-cloud/vertexai'
 
-export { SchemaType }
+export { Type }
+export type { Schema } from '@google/genai'
 
-const vertexAI = new VertexAI({
+const ai = new GoogleGenAI({
+  vertexai: true,
   project: config.gcpProjectId,
   location: config.vertexAiLocation,
-})
-
-const model = vertexAI.getGenerativeModel({
-  model: config.geminiModel,
 })
 
 export async function callAgent<T>(
   systemPrompt: string,
   userInput: string,
-  responseSchema: Schema
+  responseSchema: object
 ): Promise<T> {
-  const req = {
-    contents: [{ role: 'user' as const, parts: [{ text: userInput }] }],
-    systemInstruction: {
-      role: 'system' as const,
-      parts: [{ text: systemPrompt }],
-    },
-    generationConfig: {
+  const response = await ai.models.generateContent({
+    model: config.geminiModel,
+    contents: [{ role: 'user', parts: [{ text: userInput }] }],
+    config: {
+      systemInstruction: systemPrompt,
       responseMimeType: 'application/json',
       responseSchema,
     },
-  }
+  })
 
-  const result = await model.generateContent(req)
-  const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text
+  const text = response.text
   if (!text) throw new Error('Empty response from Gemini')
   return JSON.parse(text) as T
 }

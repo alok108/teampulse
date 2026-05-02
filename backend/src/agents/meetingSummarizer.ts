@@ -1,6 +1,5 @@
-import { callAgent, SchemaType } from '../services/gemini.js'
+import { callAgent, Type } from '../services/gemini.js'
 import { MEETING_SUMMARIZER_PROMPT } from './prompts.js'
-import type { Schema } from '@google-cloud/vertexai'
 import type { TaskPriority } from '../services/firestore.js'
 
 export interface ActionItem {
@@ -16,24 +15,24 @@ export interface MeetingSummary {
   summary: string
 }
 
-const schema: Schema = {
-  type: SchemaType.OBJECT,
+const schema = {
+  type: Type.OBJECT,
   properties: {
     actionItems: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
-          title: { type: SchemaType.STRING },
-          ownerName: { type: SchemaType.STRING },
-          dueDate: { type: SchemaType.STRING },
-          priority: { type: SchemaType.STRING, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
+          title: { type: Type.STRING },
+          ownerName: { type: Type.STRING },
+          dueDate: { type: Type.STRING },
+          priority: { type: Type.STRING, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
         },
         required: ['title', 'priority'],
       },
     },
-    keyDecisions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    summary: { type: SchemaType.STRING },
+    keyDecisions: { type: Type.ARRAY, items: { type: Type.STRING } },
+    summary: { type: Type.STRING },
   },
   required: ['actionItems', 'keyDecisions', 'summary'],
 }

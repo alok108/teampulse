@@ -1,6 +1,5 @@
-import { callAgent, SchemaType } from '../services/gemini.js'
+import { callAgent, Type } from '../services/gemini.js'
 import { BOTTLENECK_DETECTOR_PROMPT } from './prompts.js'
-import type { Schema } from '@google-cloud/vertexai'
 
 export interface BottleneckReport {
   blockedTasks: string[]
@@ -11,25 +10,25 @@ export interface BottleneckReport {
   summary: string
 }
 
-const schema: Schema = {
-  type: SchemaType.OBJECT,
+const schema = {
+  type: Type.OBJECT,
   properties: {
-    blockedTasks: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    blockedTasks: { type: Type.ARRAY, items: { type: Type.STRING } },
     overloadedMembers: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
-          name: { type: SchemaType.STRING },
-          taskCount: { type: SchemaType.NUMBER },
+          name: { type: Type.STRING },
+          taskCount: { type: Type.NUMBER },
         },
         required: ['name', 'taskCount'],
       },
     },
-    atRiskDeadlines: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    recommendations: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    healthScore: { type: SchemaType.NUMBER },
-    summary: { type: SchemaType.STRING },
+    atRiskDeadlines: { type: Type.ARRAY, items: { type: Type.STRING } },
+    recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+    healthScore: { type: Type.NUMBER },
+    summary: { type: Type.STRING },
   },
   required: ['blockedTasks', 'overloadedMembers', 'atRiskDeadlines', 'recommendations', 'healthScore', 'summary'],
 }
