@@ -5,6 +5,7 @@ COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile || pnpm install
 COPY . .
 RUN pnpm build
+RUN sh -c "node --test dist/__tests__/*.test.js"
 
 FROM node:20-alpine AS runner
 WORKDIR /app
