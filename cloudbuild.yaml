@@ -44,6 +44,8 @@ steps:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://teampulse-backend-asmgavsxpq-uc.a.run.app'
       - '-f'
       - 'frontend/Dockerfile'
       - 'frontend'
