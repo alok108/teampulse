@@ -1,4 +1,4 @@
-import { callAgent } from '../services/gemini.js'
+import { callAgent, SchemaType } from '../services/gemini.js'
 import { BOTTLENECK_DETECTOR_PROMPT } from './prompts.js'
 import type { Schema } from '@google-cloud/vertexai'
 
@@ -12,24 +12,24 @@ export interface BottleneckReport {
 }
 
 const schema: Schema = {
-  type: 'object',
+  type: SchemaType.OBJECT,
   properties: {
-    blockedTasks: { type: 'array', items: { type: 'string' } },
+    blockedTasks: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     overloadedMembers: {
-      type: 'array',
+      type: SchemaType.ARRAY,
       items: {
-        type: 'object',
+        type: SchemaType.OBJECT,
         properties: {
-          name: { type: 'string' },
-          taskCount: { type: 'number' },
+          name: { type: SchemaType.STRING },
+          taskCount: { type: SchemaType.NUMBER },
         },
         required: ['name', 'taskCount'],
       },
     },
-    atRiskDeadlines: { type: 'array', items: { type: 'string' } },
-    recommendations: { type: 'array', items: { type: 'string' } },
-    healthScore: { type: 'number' },
-    summary: { type: 'string' },
+    atRiskDeadlines: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    recommendations: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    healthScore: { type: SchemaType.NUMBER },
+    summary: { type: SchemaType.STRING },
   },
   required: ['blockedTasks', 'overloadedMembers', 'atRiskDeadlines', 'recommendations', 'healthScore', 'summary'],
 }

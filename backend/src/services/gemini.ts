@@ -1,6 +1,8 @@
-import { VertexAI } from '@google-cloud/vertexai'
+import { VertexAI, SchemaType } from '@google-cloud/vertexai'
 import { config } from '../config.js'
 import type { Schema } from '@google-cloud/vertexai'
+
+export { SchemaType }
 
 const vertexAI = new VertexAI({
   project: config.gcpProjectId,
@@ -18,7 +20,10 @@ export async function callAgent<T>(
 ): Promise<T> {
   const req = {
     contents: [{ role: 'user' as const, parts: [{ text: userInput }] }],
-    systemInstruction: { parts: [{ text: systemPrompt }] },
+    systemInstruction: {
+      role: 'system' as const,
+      parts: [{ text: systemPrompt }],
+    },
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema,

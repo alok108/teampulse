@@ -1,4 +1,4 @@
-import { callAgent } from '../services/gemini.js'
+import { callAgent, SchemaType } from '../services/gemini.js'
 import { CODE_REVIEWER_PROMPT } from './prompts.js'
 import type { Schema } from '@google-cloud/vertexai'
 
@@ -19,26 +19,26 @@ export interface CodeReviewResult {
 }
 
 const schema: Schema = {
-  type: 'object',
+  type: SchemaType.OBJECT,
   properties: {
-    qualityScore: { type: 'number' },
+    qualityScore: { type: SchemaType.NUMBER },
     issues: {
-      type: 'array',
+      type: SchemaType.ARRAY,
       items: {
-        type: 'object',
+        type: SchemaType.OBJECT,
         properties: {
-          severity: { type: 'string', enum: ['ERROR', 'WARNING', 'INFO'] },
-          type: { type: 'string' },
-          file: { type: 'string' },
-          line: { type: 'number' },
-          message: { type: 'string' },
-          suggestion: { type: 'string' },
+          severity: { type: SchemaType.STRING, enum: ['ERROR', 'WARNING', 'INFO'] },
+          type: { type: SchemaType.STRING },
+          file: { type: SchemaType.STRING },
+          line: { type: SchemaType.NUMBER },
+          message: { type: SchemaType.STRING },
+          suggestion: { type: SchemaType.STRING },
         },
         required: ['severity', 'type', 'file', 'message', 'suggestion'],
       },
     },
-    overallFeedback: { type: 'string' },
-    securityFlags: { type: 'array', items: { type: 'string' } },
+    overallFeedback: { type: SchemaType.STRING },
+    securityFlags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
   },
   required: ['qualityScore', 'issues', 'overallFeedback', 'securityFlags'],
 }
