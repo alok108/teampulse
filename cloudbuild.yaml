@@ -1,0 +1,83 @@
+steps:
+  # Build backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/backend:$SHORT_SHA'
+      - '-f'
+      - 'backend/Dockerfile'
+      - 'backend'
+    id: 'build-backend'
+
+  # Push backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/backend:$SHORT_SHA'
+    id: 'push-backend'
+    waitFor: ['build-backend']
+
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'teampulse-backend'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/backend:$SHORT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=1'
+      - '--max-instances=10'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--timeout=300'
+      - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=us-central1,VERTEX_AI_LOCATION=us-central1'
+    id: 'deploy-backend'
+    waitFor: ['push-backend']
+
+  # Build frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
+      - '-f'
+      - 'frontend/Dockerfile'
+      - 'frontend'
+    id: 'build-frontend'
+
+  # Push frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'teampulse-frontend'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=1'
+      - '--max-instances=5'
+      - '--memory=512Mi'
+      - '--cpu=1'
+    id: 'deploy-frontend'
+    waitFor: ['push-frontend']
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/backend:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
