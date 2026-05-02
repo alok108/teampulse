@@ -34,7 +34,7 @@ steps:
       - '--memory=1Gi'
       - '--cpu=1'
       - '--timeout=300'
-      - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=us-central1,VERTEX_AI_LOCATION=us-central1'
+      - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=us-central1,VERTEX_AI_LOCATION=us-central1,FIRESTORE_DATABASE=teampulse'
     id: 'deploy-backend'
     waitFor: ['push-backend']
 
