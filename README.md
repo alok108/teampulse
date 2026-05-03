@@ -14,6 +14,7 @@ TeamPulse helps human teams coordinate better by turning the noise — meetings,
 | **Smart Task Creation** | Describe a task in plain English → AI assigns priority, effort estimate, and breaks it into subtasks |
 | **AI Code Review** | Paste any code snippet → AI returns a quality score (0-100), security flags, and specific improvement suggestions |
 | **Team Health Dashboard** | AI scans your task board and surfaces bottlenecks, overloaded team members, and at-risk deadlines before they become incidents |
+| **Sign in with Google** | Firebase Authentication gates every API call. Backend verifies Firebase ID tokens via `firebase-admin` over Application Default Credentials |
 
 ---
 
@@ -73,10 +74,11 @@ All agents use `responseMimeType: "application/json"` with a `responseSchema` �
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+, pnpm
+- Node.js 20+, npm
 - Google Cloud project with billing enabled
 - Firestore initialized (native mode, `us-central1`)
 - Vertex AI API enabled
+- Firebase enabled on the GCP project + Google sign-in provider enabled (see [docs/DOCUMENTATION.md → Authentication](docs/DOCUMENTATION.md#authentication))
 
 ### Enable APIs
 ```bash
@@ -98,16 +100,24 @@ gcloud artifacts repositories create teampulse \
 ### Local development
 ```bash
 cp .env.example .env
-# Fill in your GCP_PROJECT_ID
+# .env: GCP_PROJECT_ID, FIRESTORE_DATABASE=teampulse, PORT=3001
 
-cd backend && pnpm install && pnpm dev
-cd frontend && pnpm install && pnpm dev
+# Frontend env — fill in Firebase Web config from the Console
+cp .env.example frontend/.env.local
+# .env.local: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_APP_ID, etc.
+
+gcloud auth application-default login   # one-time
+
+cd backend && npm install && npm run dev    # :3001
+cd frontend && npm install && npm run dev   # :3000
 ```
+
+Open http://localhost:3000, sign in with Google, and the dashboard loads with insights.
 
 ### Deploy to Cloud Run (via Cloud Build)
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_BACKEND_URL=https://your-backend-url
+  --substitutions=_BACKEND_URL=https://your-backend-url,_FIREBASE_API_KEY=...,_FIREBASE_APP_ID=...
 ```
 
 ### Seed demo data
