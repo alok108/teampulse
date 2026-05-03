@@ -93,7 +93,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 substitutions:
-  _BACKEND_URL: ''
+  _BACKEND_URL: 'https://teampulse-backend-asmgavsxpq-uc.a.run.app'
   _FIREBASE_API_KEY: ''
   _FIREBASE_AUTH_DOMAIN: 'promptwars-chennai-495105.firebaseapp.com'
   _FIREBASE_APP_ID: ''
