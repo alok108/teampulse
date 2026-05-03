@@ -1,11 +1,21 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const TEAM_ID = 'demo-team'
 
+let tokenGetter: () => Promise<string | null> = async () => null
+
+export function setTokenGetter(fn: () => Promise<string | null>) {
+  tokenGetter = fn
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  const token = await tokenGetter()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string> | undefined),
+  }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' }))
     throw new Error(err.error || `HTTP ${res.status}`)
