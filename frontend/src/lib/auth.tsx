@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { onIdTokenChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
-import { auth, googleProvider } from './firebase'
+import { getFirebaseAuth, googleProvider } from './firebase'
 import { setTokenGetter } from './api'
 
 interface AuthState {
@@ -19,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const auth = getFirebaseAuth()
     setTokenGetter(() => auth.currentUser?.getIdToken() ?? Promise.resolve(null))
     const unsub = onIdTokenChanged(auth, (next) => {
       setUser(next)
@@ -28,11 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const handleSignIn = useCallback(async () => {
-    await signInWithPopup(auth, googleProvider)
+    await signInWithPopup(getFirebaseAuth(), googleProvider)
   }, [])
 
   const handleSignOut = useCallback(async () => {
-    await signOut(auth)
+    await signOut(getFirebaseAuth())
   }, [])
 
   return (
