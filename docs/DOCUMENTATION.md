@@ -14,10 +14,11 @@
 6. [AI Agents](#ai-agents)
 7. [Firestore Data Models](#firestore-data-models)
 8. [API Reference](#api-reference)
-9. [CI/CD & Deployment](#cicd--deployment)
-10. [Environment Configuration](#environment-configuration)
-11. [Scripts & Tooling](#scripts--tooling)
-12. [Known Caveats](#known-caveats)
+9. [Authentication](#authentication)
+10. [CI/CD & Deployment](#cicd--deployment)
+11. [Environment Configuration](#environment-configuration)
+12. [Scripts & Tooling](#scripts--tooling)
+13. [Known Caveats](#known-caveats)
 
 ---
 
@@ -436,6 +437,43 @@ GET    /api/insights/team?teamId=   AI team health report
               recommendations, healthScore, summary, stats }
 ```
 
+> All `/api/*` routes require `Authorization: Bearer <Firebase ID token>`. `GET /health` is open. Missing/invalid token → 401.
+
+---
+
+## Authentication
+
+Firebase Authentication with Google sign-in. Backend verifies ID tokens via `firebase-admin`; frontend uses the Firebase Web SDK.
+
+### Backend
+
+- [services/firebaseAuth.ts](file:///Users/alok/Sites/alokation/promptWars/backend/src/services/firebaseAuth.ts) — Initializes `firebase-admin` with Application Default Credentials and exposes `verifyIdToken(token)`.
+- [plugins/auth.ts](file:///Users/alok/Sites/alokation/promptWars/backend/src/plugins/auth.ts) — Fastify `preHandler` hook (`authHook`). Reads `Authorization: Bearer <token>`, verifies it, attaches `req.user = { uid, email }`. Returns 401 on missing or invalid token.
+- [index.ts](file:///Users/alok/Sites/alokation/promptWars/backend/src/index.ts) — Registers `authHook` directly on the encapsulated `/api` scope so it applies to every protected route. `/health` stays unauthenticated.
+- [index.ts global error handler](file:///Users/alok/Sites/alokation/promptWars/backend/src/index.ts) — Replaces opaque 500s with the underlying error message + code, so failures (Firestore/Vertex AI/auth) surface in the response body.
+
+### Frontend
+
+- [lib/firebase.ts](file:///Users/alok/Sites/alokation/promptWars/frontend/src/lib/firebase.ts) — `initializeApp` from `NEXT_PUBLIC_FIREBASE_*` env vars. Exports `auth` and `googleProvider`.
+- [lib/auth.tsx](file:///Users/alok/Sites/alokation/promptWars/frontend/src/lib/auth.tsx) — `AuthProvider` (React Context) + `useAuth()` hook. Subscribes to `onIdTokenChanged`, exposes `{ user, loading, signIn, signOut }`. On mount it calls `setTokenGetter` from `api.ts` so every request includes the current ID token.
+- [lib/api.ts](file:///Users/alok/Sites/alokation/promptWars/frontend/src/lib/api.ts) — `apiFetch` awaits the registered token-getter and attaches `Authorization: Bearer <idToken>` to every request. Provider-agnostic — the auth layer can be swapped without touching API call sites.
+- [components/SignInGate.tsx](file:///Users/alok/Sites/alokation/promptWars/frontend/src/components/SignInGate.tsx) — Full-page gate. While `loading`, shows a spinner. When unauthenticated, shows a single "Sign in with Google" button. When signed in, renders `children`.
+- [components/NavUser.tsx](file:///Users/alok/Sites/alokation/promptWars/frontend/src/components/NavUser.tsx) — Email + sign-out control rendered next to the nav links.
+- [app/layout.tsx](file:///Users/alok/Sites/alokation/promptWars/frontend/src/app/layout.tsx) — Wraps the app in `<AuthProvider>` and renders `<SignInGate>` around `<main>`.
+
+### Tenancy
+
+`teamId` stays hardcoded to `demo-team` in this hackathon scope. Auth gates the API but doesn't yet derive `teamId` from `req.user.uid` — switching to per-user team membership later is a single-route change.
+
+### One-time Firebase setup
+
+The existing GCP project (`promptwars-chennai-495105`) is now Firebase-enabled with a Web App registered — done programmatically via the Firebase Management API (`projects:addFirebase` and `projects/{id}/webApps`). The remaining manual step is enabling Google as a sign-in provider:
+
+1. https://console.firebase.google.com/project/promptwars-chennai-495105/authentication/providers
+2. Click **Get started** → **Google** → toggle **Enable** → set support email → **Save**.
+
+After that, copy the four `firebaseConfig` values from **Project settings → Your apps → Web** into `frontend/.env.local`. The current Web App is named "TeamPulse Web".
+
 ---
 
 ## CI/CD & Deployment
@@ -443,8 +481,10 @@ GET    /api/insights/team?teamId=   AI team health report
 ### GitHub Actions — [ci.yml](file:///Users/alok/Sites/alokation/promptWars/.github/workflows/ci.yml)
 
 Runs on push/PR to `main`. Two parallel jobs:
-- **Backend**: `pnpm install` → `pnpm typecheck`
-- **Frontend**: `pnpm install` → `pnpm typecheck`
+- **Backend**: `npm ci --ignore-scripts` → `npm run typecheck` → `npm test`
+- **Frontend**: `npm ci --ignore-scripts` → `npm run typecheck` → `npm test`
+
+Tests use Node's built-in test runner (`node --test`). 31 tests cover agent schemas, request validation, health endpoint, insights snapshot building, deadline detection, GitHub webhook signature verification (backend) and API client URL building, status formatting, health/quality score thresholds (frontend).
 
 ### Google Cloud Build — [cloudbuild.yaml](file:///Users/alok/Sites/alokation/promptWars/cloudbuild.yaml)
 
@@ -460,8 +500,15 @@ Runs on push/PR to `main`. Two parallel jobs:
 **Trigger command:**
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_BACKEND_URL=https://your-backend-url
+  --substitutions=_BACKEND_URL=https://your-backend-url,_FIREBASE_API_KEY=...,_FIREBASE_APP_ID=...
 ```
+
+**Substitutions (cloudbuild.yaml):**
+- `_BACKEND_URL` — Cloud Run backend URL, baked into the frontend bundle as `NEXT_PUBLIC_API_URL`. Defaults to the deployed Cloud Run URL.
+- `_FIREBASE_API_KEY`, `_FIREBASE_APP_ID` — From Firebase Console → Project settings → Your apps → Web. Required for the deployed frontend to authenticate.
+- `_FIREBASE_AUTH_DOMAIN` — Defaults to `promptwars-chennai-495105.firebaseapp.com`.
+
+The frontend Dockerfile takes these as `ARG`s and bakes them into the Next.js bundle at build time (they are public values, safe to embed).
 
 ### Firestore Rules — [firestore.rules](file:///Users/alok/Sites/alokation/promptWars/firestore.rules)
 
@@ -472,23 +519,34 @@ gcloud builds submit --config cloudbuild.yaml \
 
 ## Environment Configuration
 
-### Root — `.env.example`
+### Root — `.env.example` (backend + shared)
 
 ```env
 GCP_PROJECT_ID=promptwars-chennai-495105
 APP_NAME=TeamPulse
 GCP_REGION=us-central1
 VERTEX_AI_LOCATION=us-central1
-FIRESTORE_DATABASE=(default)
+# Created with: gcloud firestore databases create --database=teampulse --location=us-central1
+FIRESTORE_DATABASE=teampulse
 GITHUB_WEBHOOK_SECRET=your_github_webhook_secret_here
-PORT=8080
+PORT=3001
 ```
+
+The backend reads this via `node --env-file=.env` for local dev. ADC (Application Default Credentials) is used for both Vertex AI and Firestore — no service-account JSON needed locally. Run `gcloud auth application-default login` once.
 
 ### Frontend — `.env.local`
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# Copy these four from Firebase Console → Project settings → Your apps → Web
+NEXT_PUBLIC_FIREBASE_API_KEY=<apiKey>
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=promptwars-chennai-495105.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=promptwars-chennai-495105
+NEXT_PUBLIC_FIREBASE_APP_ID=<appId>
 ```
+
+Firebase Web SDK config values are public — they identify the project, they don't authorize access. Real authorization happens via the ID token signed by Firebase Auth.
 
 ---
 
@@ -525,12 +583,8 @@ packages:
 
 ## Known Caveats
 
-> [!IMPORTANT]
-> - **`next.config.ts` → `next.config.mjs`**: Next.js 14.2.5 does not support `.ts` config. The file has been converted to `.mjs`. Delete the old `.ts` file if it still exists.
-
 > [!WARNING]
-> - **Firestore rules are wide open** — must lock down for production.
+> - **Firestore rules are wide open** — backend uses ADC and bypasses rules anyway, but must be locked down before any client-direct Firestore access.
 > - **GitHub webhook** only uses PR metadata, not the actual diff (production TODO).
-> - **`TEAM_ID` is hardcoded** to `demo-team` in the frontend API client.
-> - **No authentication** — no user login or session management (hackathon scope).
-> - **No error retry logic** on Gemini calls.
+> - **`TEAM_ID` is hardcoded** to `demo-team` in the frontend API client and not derived from `req.user.uid` server-side. Auth gates the API but tenancy is single-team.
+> - **No error retry logic** on Gemini calls — a transient Vertex AI failure surfaces as a 500 (with the underlying message thanks to the global error handler).
