@@ -45,7 +45,15 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/teampulse/frontend:$SHORT_SHA'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=https://teampulse-backend-asmgavsxpq-uc.a.run.app'
+      - 'NEXT_PUBLIC_API_URL=${_BACKEND_URL}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_FIREBASE_API_KEY}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_FIREBASE_AUTH_DOMAIN}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=$PROJECT_ID'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_FIREBASE_APP_ID}'
       - '-f'
       - 'frontend/Dockerfile'
       - 'frontend'
@@ -83,3 +91,9 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _BACKEND_URL: 'https://teampulse-backend-asmgavsxpq-uc.a.run.app'
+  _FIREBASE_API_KEY: ''
+  _FIREBASE_AUTH_DOMAIN: 'promptwars-chennai-495105.firebaseapp.com'
+  _FIREBASE_APP_ID: ''

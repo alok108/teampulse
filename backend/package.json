@@ -9,7 +9,7 @@
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsc && node --test 'dist/__tests__/*.test.js'"
+    "test": "tsc && node --test dist/__tests__/*.test.js"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -17,6 +17,7 @@
     "@google-cloud/vertexai": "^1.2.0",
     "@google/genai": "^1.51.0",
     "fastify": "^4.27.0",
+    "firebase-admin": "^13.8.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
